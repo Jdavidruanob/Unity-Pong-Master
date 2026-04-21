@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections; // Necesario para la Corrutina (el temporizador de 3 seg)
+using System.Collections;
 
 public class ControlPaleta : MonoBehaviour
 {
@@ -11,66 +11,52 @@ public class ControlPaleta : MonoBehaviour
     private Rigidbody2D rb;
     private float yInicial;
 
-    // --- VARIABLES DE PODER (Lo nuevo) ---
-    private TrailRenderer trail;
-    public bool tienePowerShot = false; // "public" para que el GameManager la vea
+    // --- NUEVAS VARIABLES PARA EL AURA ---
+    private ParticleSystem aura;
+    public bool tienePowerShot = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         yInicial = transform.position.y;
 
-        // --- INICIALIZAR TRAIL (Lo nuevo) ---
-        trail = GetComponent<TrailRenderer>();
-        if (trail != null)
+        // Buscamos el sistema de partículas
+        aura = GetComponent<ParticleSystem>();
+        if (aura != null)
         {
-            trail.emitting = false; // Empezamos apagados
-        }
-        else
-        {
-            Debug.LogError("¡Falta el componente Trail Renderer en " + gameObject.name + "!");
+            var emission = aura.emission;
+            emission.enabled = false; // Empezamos con el aura apagada
         }
     }
 
     void Update()
     {
-        // Tu lógica original de movimiento (intacta)
-        float movimiento;
-        if (esJugador1)
-        {
-            movimiento = Input.GetAxisRaw("Vertical");
-        }
-        else
-        {
-            movimiento = Input.GetAxisRaw("Vertical2");
-        }
-
+        // Tu lógica de movimiento original...
+        float movimiento = esJugador1 ? Input.GetAxisRaw("Vertical") : Input.GetAxisRaw("Vertical2");
         rb.linearVelocity = new Vector2(0, movimiento * velocidad);
-
         float yLimitado = Mathf.Clamp(transform.position.y, yInicial - rangoMovimiento, yInicial + rangoMovimiento);
         transform.position = new Vector3(transform.position.x, yLimitado, transform.position.z);
     }
 
-    // --- FUNCIONES DE PODER (Lo nuevo) ---
     public void ActivarPowerShot()
     {
-        // Verificamos por seguridad que el componente exista
-        if (trail == null) return;
-
-        // Iniciamos el temporizador de 3 seg
+        if (aura == null) return;
         StartCoroutine(DuracionPowerShot());
     }
 
     IEnumerator DuracionPowerShot()
     {
         tienePowerShot = true;
-        trail.emitting = true; // Encendemos la estela
-        trail.startColor = new Color(1f, 0.5f, 0f); // Color naranja de fuego
 
-        // Esperamos 3 segundos reales
+        // Encender el aura
+        var emission = aura.emission;
+        emission.enabled = true;
+        aura.Play();
+
         yield return new WaitForSeconds(3f);
 
+        // Apagar el aura
         tienePowerShot = false;
-        trail.emitting = false; // Apagamos la estela
+        emission.enabled = false;
     }
 }
